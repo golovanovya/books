@@ -1,7 +1,13 @@
 <?php
 
+use App\Book\BatchXmlJob;
+use App\Http\Resources\Books;
+use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +20,26 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+Route::get('/books', function () {
+    return new Books(Book::paginate());
+});
+
+Route::post('/books/upload', function (Request $request) {
+    $validator = Validator::make($request->all(), [
+        'file' => 'required|mimes:xml',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'error' => $validator->errors(),
+        ], 401);
+    }
+
+    $filepath = $request->file->store('public/documents');
+    Queue::push(new BatchXmlJob($filepath));
+
+    return response()->json([
+        "success" => true,
+        "message" => "File successfully uploaded",
+    ]);
 });

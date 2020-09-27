@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Book\BatchXmlJob;
 use Illuminate\Console\Command;
-use XMLReader;
+use Illuminate\Support\Facades\Queue;
 
 class ParseBooks extends Command
 {
@@ -31,39 +32,6 @@ class ParseBooks extends Command
         parent::__construct();
     }
 
-    private function read(string $filepath)
-    {
-        $reader = new XMLReader();
-        try {
-            $reader->open($filepath);
-            $book = [];
-            while ($reader->read()) {
-                if ($reader->nodeType === XMLReader::END_ELEMENT) {
-                    if ($reader->name === 'book') {
-                        yield $book;
-                    }
-                    continue;
-                }
-                switch ($reader->name) {
-                    case 'book':
-                        $book = [
-                            'isbn' => $reader->getAttribute('isbn'),
-                            'title' => $reader->getAttribute('title'),
-                        ];
-                        break;
-                    case 'image':
-                        $book['image'] = $reader->readString();
-                        break;
-                    case 'description':
-                        $book['description'] = $reader->readString();
-                        break;
-                }
-            }
-        } finally {
-            $reader->close();
-        }
-    }
-
     /**
      * Execute the console command.
      *
@@ -73,14 +41,7 @@ class ParseBooks extends Command
     {
         $filepath = $this->argument('filepath');
         $this->line("Parsing file $filepath");
-        $books = $this->read($filepath);
-        $i = 0;
-        foreach ($books as $book) {
-            var_dump($book);
-            if (++$i >= 10) {
-                break;
-            }
-        }
+        Queue::push(new BatchXmlJob($filepath));
         return 0;
     }
 }

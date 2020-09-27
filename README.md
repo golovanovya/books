@@ -1,61 +1,30 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Books
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+## Description:
 
-## About Laravel
+Create a simple application calls Books Library. It should contain data from the provided XML file (500000 records)
+Each book must have a name, image (book cover) with images size "200x400" and must be cropped.
+You need to have a form where we can upload XML file and it should proceed after upload the test file. Use laravel queue jobs to import this file in background.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Here the fields for the books table:
+- Title: string, not null, 190 limit
+- Image: string, null
+- ISBN: string, not null, unique
+- Description: longtext
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Parser:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+We have XML with books data. You need to write a simple parser which will parse all of the items from the XML and will create the records in the database. Write a parser which will import all data to the database. It must check that the book doesn't exists in the batabase based on ISBN (titles can be duplicated), download image from URL and store it to the `public/storage/{year}/{month}/{date}/{unique filename}.jpg`. If book already exists it must skip this book and continue work with other items. If image not set for the book it must store book and skip the image saving process.
 
-## Learning Laravel
+### FRONTEND:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Use any popular CSS framework (bootstrap, talwind or any other) and show full list of the books which you have in the database with pagination (Show 100 books on one page). Pagination should works, user should able to search data by ISBN or title via one field. We don't care about frontend part and we need just to see that you know how to use vue.js.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+After completing the test task share your code for review to the bitbucket or github with installment instructions in README.MD file. We will install it locally and will check how it works.
 
-## Laravel Sponsors
+## Notes:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Make sure that you have separated business logic. Don't use controllers or models for the business logic.
+- Not needed to comment the code. Make sure that names of the methods answer on question what they are do.
+- PHP 7.3
+- Laravel 7 or 8
