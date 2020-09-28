@@ -20,8 +20,13 @@ use Illuminate\Support\Facades\Validator;
 |
 */
 
-Route::get('/books', function () {
-    return new Books(Book::paginate());
+Route::get('/books', function (Request $request) {
+    $search = $request->get('search');
+    return new Books(
+        Book::where('title', 'like', "%$search%")
+            ->orWhere('isbn', 'like', "%$search%")
+            ->paginate(100)
+    );
 });
 
 Route::post('/books/upload', function (Request $request) {
@@ -36,7 +41,7 @@ Route::post('/books/upload', function (Request $request) {
     }
 
     $filepath = $request->file->store('public/documents');
-    Queue::push(new BatchXmlJob($filepath));
+    Queue::push(new BatchXmlJob(Storage::path($filepath)));
 
     return response()->json([
         "success" => true,

@@ -1,4 +1,4 @@
-# Books
+# Books Library
 
 ## Description:
 
@@ -28,3 +28,32 @@ After completing the test task share your code for review to the bitbucket or gi
 - Not needed to comment the code. Make sure that names of the methods answer on question what they are do.
 - PHP 7.3
 - Laravel 7 or 8
+
+## Requirements
+
+- PHP >= 7.3
+- BCMath PHP Extension
+- Ctype PHP Extension
+- Fileinfo PHP extension
+- JSON PHP Extension
+- Mbstring PHP Extension
+- OpenSSL PHP Extension
+- PDO PHP Extension
+- Tokenizer PHP Extension
+- XML PHP Extension
+- Fileinfo Extension
+- GD Library (>=2.0) … or …
+- Imagick PHP extension (>=6.5.7)
+
+## Installation
+
+    git clone https://github.com/golovanovya/books.git
+    composer install
+    cp .env.example .env
+
+Configure connection to database and queue and run migrations
+
+    php artisan migrate
+    php artisan serve
+
+And open in browser http://localhost:8000
