@@ -28,7 +28,7 @@ class ImageUploader
                 ->getContents()
             );
         if (!$writed) {
-            throw new Exception("Can't write fiel $path");
+            throw new Exception("Can't write file $path");
         }
         return $path;
     }

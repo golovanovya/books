@@ -3,6 +3,7 @@
 namespace App\Book;
 
 use App\Models\Book;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Book service
@@ -10,10 +11,12 @@ use App\Models\Book;
 class BookService
 {
     private $imageUploader;
+    private $storage;
 
     public function __construct(ImageUploader $imageUploader)
     {
         $this->imageUploader = $imageUploader;
+        $this->storage = config('filesystems.default');
     }
     /**
      * Create book
@@ -24,12 +27,15 @@ class BookService
     public function create(BookCreateDto $dto)
     {
         $book = Book::create([
-            'title' => $dto->getTitle(),
             'isbn' => $dto->getIsbn(),
+            'title' => $dto->getTitle(),
             'description' => $dto->getDescription(),
         ]);
         if ($dto->getImage() !== null) {
-            $book->image = $this->imageUploader->upload($dto->getImage());
+            DB::transaction(function () use ($dto, $book) {
+                $book->cover = $this->imageUploader->upload($dto->getImage());
+                $book->storage = $this->storage;
+            });
         }
         $book->saveOrFail();
     }

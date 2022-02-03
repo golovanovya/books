@@ -17,8 +17,8 @@ class BookCreateDto
     private $description;
 
     public function __construct(
-        string $title,
         string $isbn,
+        string $title,
         ?string $descripton = null,
         ?string $image = null
     ) {
@@ -57,10 +57,10 @@ class BookCreateDto
     public static function createFromXml(array $book): self
     {
         return new self(
-            $book['title'],
             $book['isbn'],
+            $book['title'],
             $book['description'] ?? null,
-            $book['image'] ?? null
+            $book['image'] ?? null,
         );
     }
 }

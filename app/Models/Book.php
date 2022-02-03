@@ -9,25 +9,35 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Book model
  *
- * @property string $title
- * @property string $image
  * @property string $isbn
+ * @property string $title
  * @property string $description
+ * @property string $cover
+ * @property string $storage
+ * @property \DateTime $created_at
+ * @property \DateTime $updated_at
  */
 class Book extends Model
 {
     use HasFactory;
 
-    protected $appends = ['imageUrl'];
-
     protected $fillable = [
-        'title',
-        'image',
         'isbn',
+        'title',
+        'cover',
         'description',
+        'storage',
     ];
 
-    public $timestamps = false;
+    protected $primaryKey = 'isbn';
+
+    protected $keyType = 'string';
+
+    protected $appends = ['imageUrl'];
+
+    protected $hidden = ['storage'];
+
+    public $incrementing = false;
 
     /**
      * @inheritDoc
@@ -35,10 +45,11 @@ class Book extends Model
     public function rules()
     {
         return [
+            'isbn' => 'string|max:255',
             'title' => 'string|max:190',
-            'isbn' => 'string',
-            'description' => 'string|nullable',
-            'image' => 'string|nullable',
+            'description' => 'nullable|string',
+            'cover' => 'nullable|string|max:255',
+            'storage' => 'string|max:255',
         ];
     }
 
@@ -49,6 +60,6 @@ class Book extends Model
      */
     public function getImageUrlAttribute()
     {
-        return $this->image ? Storage::url($this->image) : null;
+        return $this->cover ? url(Storage::disk($this->storage)->url($this->cover)) : null;
     }
 }
