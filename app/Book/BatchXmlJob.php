@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Job for parsing xml file
@@ -34,5 +35,6 @@ class BatchXmlJob implements ShouldQueue
             $dto = BookCreateDto::createFromXml($book);
             Queue::push(new BookJob($dto));
         }
+        Storage::delete($this->filepath);
     }
 }

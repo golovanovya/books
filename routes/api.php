@@ -40,11 +40,11 @@ Route::post('/books/upload', function (Request $request) {
         ], 401);
     }
 
-    $filepath = $request->file->store('public/documents');
+    $filepath = $request->file->store('documents');
     Queue::push(new BatchXmlJob(Storage::path($filepath)));
 
     return response()->json([
         "success" => true,
-        "message" => "File successfully uploaded",
+        "message" => "File successfully uploaded.",
     ]);
 });

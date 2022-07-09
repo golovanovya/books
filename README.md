@@ -57,3 +57,11 @@ Configure connection to database and queue and run migrations
     php artisan serve
 
 And open in browser http://localhost:8000
+
+Populate database with fake data
+
+    php artisan db:seed
+
+## Run tests
+
+    php artisan test

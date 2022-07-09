@@ -14,13 +14,13 @@ class ImageUploader
      * @param string $image
      * @return string local path
      */
-    public function upload(string $imagePath): string
+    public function upload(string $imagePath, string $disk = 'public'): string
     {
         $name = uniqid("", true) . ".png";
         $path = date('Y/m/d/') . $name;
         $image = Image::make($imagePath);
         $image->fit(200, 400);
-        $writed = Storage::disk('public')
+        $writed = Storage::disk($disk)
             ->put(
                 $path,
                 $image->psrResponse()
