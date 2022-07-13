@@ -22,6 +22,10 @@ jobs:
       with:
         fetch-depth: 1
 
+    - name: Install xdebug
+      run: |
+        apt install php8.1-xdebug && echo 'xdebug.mode=coverage' >> /etc/php/8.1/mods-available/xdebug.ini
+
     - name: Install composer dependencies
       run: |
         composer install --no-scripts
@@ -36,5 +40,5 @@ jobs:
         php artisan migrate --force
 
     - name: Run Testsuite
-      run: php artisan test
+      run: php artisan test --coverage --min=80
 
