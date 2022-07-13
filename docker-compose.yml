@@ -1,0 +1,31 @@
+version: "3"
+services:
+  web:
+    image: nginx:latest
+    expose:
+      - ${XDEBUG_PORT:-9000}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/default.conf:/etc/nginx/conf.d/default.conf
+      - ./:/var/www
+    links:
+      - php
+      - db
+    depends_on:
+      - php
+      - db
+  php:
+    build: ./docker/php
+    volumes:
+      - ./:/var/www
+  db:
+    image: bitnami/mysql:8.0
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/mysql
+volumes:
+  db_data:
