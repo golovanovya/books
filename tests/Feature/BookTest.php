@@ -7,6 +7,7 @@ use App\Book\BookCreateDto;
 use App\Book\BookJob;
 use App\Book\BookService;
 use App\Models\Book;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -24,6 +25,7 @@ class BookTest extends TestCase
         Storage::fake('local');
         Queue::fake();
     }
+
     public function testUpload()
     {
         $this->initFakes();
@@ -37,6 +39,14 @@ class BookTest extends TestCase
         Storage::disk('local')
             ->assertExists('documents/' . $file->hashName());
 
+        Queue::assertPushed(BatchXmlJob::class);
+    }
+
+    public function testParseBookCommand()
+    {
+        $this->initFakes();
+
+        $this->artisan('book:parse test.xml')->assertSuccessful();
         Queue::assertPushed(BatchXmlJob::class);
     }
 
@@ -57,6 +67,53 @@ class BookTest extends TestCase
         (new BatchXmlJob($filepath))->handle();
 
         Queue::assertPushed(BookJob::class, 2);
+    }
+
+    public function testBookJob()
+    {
+        $this->initFakes();
+
+        $this->assertDatabaseCount('books', 0);
+
+        $dto = BookCreateDto::createFromXml([
+            'isbn' => fake()->isbn13(),
+            'title' => fake()->words(2, true),
+            'description' => fake()->sentence(),
+            'image' => null,
+        ]);
+        (new BookJob($dto))
+            ->handle(app()->get(BookService::class));
+
+        $this->assertDatabaseCount('books', 1);
+        $this->assertDatabaseHas('books', ['isbn' => $dto->getIsbn()]);
+
+        // Ignore repeats
+        (new BookJob($dto))
+            ->handle(app()->get(BookService::class));
+
+        $this->assertDatabaseCount('books', 1);
+        $this->assertDatabaseHas('books', ['isbn' => $dto->getIsbn()]);
+    }
+
+    public function testBookJobFail()
+    {
+        $this->initFakes();
+        $this->assertDatabaseCount('books', 0);
+
+        $dto = BookCreateDto::createFromXml([
+            'isbn' => fake()->isbn13(),
+            'title' => fake()->words(2, true),
+            'description' => fake()->sentence(),
+            'image' => null,
+        ]);
+        $bookService = $this->createMock(BookService::class);
+        $bookService->method('create')
+            ->will($this->throwException(new QueryException('some sql', [], new \Exception('test exception'))));
+        $this->expectException(QueryException::class);
+
+        (new BookJob($dto))
+            ->handle($bookService);
+        $this->assertDatabaseCount('books', 0);
     }
 
     public function testCreate()
@@ -85,7 +142,7 @@ class BookTest extends TestCase
 
     public function testGetBooks()
     {
-        $book = Book::factory(150)->create();
+        Book::factory(150)->create();
         $this->assertDatabaseCount('books', 150);
         $response = $this->get('/api/books');
         $response->assertStatus(200)
