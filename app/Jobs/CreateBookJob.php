@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Book;
+namespace App\Jobs;
 
+use App\Actions\Book\Create;
+use App\Dto\CreateBookDto;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\QueryException;
@@ -12,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Job for saving book
  */
-class BookJob implements ShouldQueue
+class CreateBookJob implements ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -21,22 +23,15 @@ class BookJob implements ShouldQueue
 
     private $bookDto;
 
-    public function __construct(BookCreateDto $bookDto)
+    public function __construct(CreateBookDto $bookDto)
     {
         $this->bookDto = $bookDto;
     }
 
-    /**
-     * @inheritDoc
-     *
-     * @param BookService $bookService
-     * @return void
-     */
-    public function handle(
-        BookService $bookService
-    ) {
+    public function handle(Create $create): void
+    {
         try {
-            $bookService->create($this->bookDto);
+            $create($this->bookDto);
         } catch (QueryException $e) {
             if ($e->getCode() != 23000) {
                 throw $e;

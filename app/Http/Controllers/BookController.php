@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Book\BatchXmlJob;
+use App\Actions\Book\UploadXml;
+use App\Http\Requests\BooksUploadRequest;
 use App\Http\Resources\Books;
 use App\Models\Book;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
@@ -26,20 +24,9 @@ class BookController extends Controller
         );
     }
 
-    public function upload(Request $request)
+    public function upload(BooksUploadRequest $request, UploadXml $uploadXml)
     {
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|mimes:xml',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'error' => $validator->errors(),
-            ], 401);
-        }
-
-        $filepath = $request->file->store('documents');
-        Queue::push(new BatchXmlJob(Storage::path($filepath)));
+        $uploadXml($request->file);
 
         return response()->json([
             "success" => true,

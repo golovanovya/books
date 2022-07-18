@@ -1,6 +1,9 @@
 <?php
 
-namespace App\Book;
+namespace App\Dto;
+
+use App\Models\Book;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Book create DTO
@@ -9,7 +12,7 @@ namespace App\Book;
  * @property string $isbn
  * @property string $description
  */
-class BookCreateDto
+class CreateBookDto
 {
     private $title;
     private $image;
@@ -22,6 +25,13 @@ class BookCreateDto
         ?string $descripton = null,
         ?string $image = null
     ) {
+        Validator::validate([
+            'isbn' => $isbn,
+            'title' => $title,
+            'description' => $description ?? null,
+            'cover' => $image ?? null,
+        ], (new Book())->rules());
+
         $this->title = $title;
         $this->isbn = $isbn;
         $this->description = $descripton;
@@ -51,8 +61,7 @@ class BookCreateDto
     /**
      * Create DTO from xml parsed array
      *
-     * @param array $book
-     * @return self
+     * @throws \Illuminate\Validation\ValidationException
      */
     public static function createFromXml(array $book): self
     {

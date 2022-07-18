@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Book\BatchXmlJob;
-use App\Book\BookCreateDto;
-use App\Book\BookJob;
-use App\Book\BookService;
+use App\Actions\Book\Create;
+use App\Actions\Book\ParseXml;
+use App\Dto\CreateBookDto;
+use App\Jobs\BatchXmlJob;
+use App\Jobs\CreateBookJob;
 use App\Models\Book;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +33,7 @@ class BookTest extends TestCase
 
         Queue::assertNothingPushed(BatchXmlJob::class);
         $file = UploadedFile::fake()->create('books.xml');
-        $response = $this->post('/api/books/upload', ['file' => $file]);
+        $response = $this->postJson('/api/books/upload', ['file' => $file]);
 
         $response->assertStatus(200)
             ->assertJsonPath('message', 'File successfully uploaded.');
@@ -46,73 +47,75 @@ class BookTest extends TestCase
     {
         $this->initFakes();
 
-        $this->artisan('book:parse test.xml')->assertSuccessful();
-        Queue::assertPushed(BatchXmlJob::class);
+        $filepath = Storage::disk('test')->path('books.xml');
+        $this->artisan("book:parse {$filepath}")->assertSuccessful();
+
+        Queue::assertPushed(CreateBookJob::class, 2);
     }
 
     public function testFailedUpload()
     {
-        $response = $this->post('/api/books/upload');
-        $response->assertStatus(401)
-            ->assertJsonPath('error.file.0', 'The file field is required.');
+        $response = $this->postJson('/api/books/upload');
+        $response->assertStatus(422)
+            ->assertJsonPath('errors.file.0', 'The file field is required.');
     }
 
     public function testXmlJob()
     {
         $this->initFakes();
 
-        Queue::assertNothingPushed(BookJob::class);
+        Queue::assertNothingPushed(CreateBookJob::class);
 
         $filepath = Storage::disk('test')->path('books.xml');
-        (new BatchXmlJob($filepath))->handle();
+        (new BatchXmlJob($filepath))->handle(app()->get(ParseXml::class));
 
-        Queue::assertPushed(BookJob::class, 2);
+        Queue::assertPushed(CreateBookJob::class, 2);
     }
 
-    public function testBookJob()
+    public function testCreateBookJob()
     {
         $this->initFakes();
 
         $this->assertDatabaseCount('books', 0);
 
-        $dto = BookCreateDto::createFromXml([
+        $dto = CreateBookDto::createFromXml([
             'isbn' => fake()->isbn13(),
             'title' => fake()->words(2, true),
             'description' => fake()->sentence(),
             'image' => null,
         ]);
-        (new BookJob($dto))
-            ->handle(app()->get(BookService::class));
+        (new CreateBookJob($dto))
+            ->handle(app()->get(Create::class));
 
         $this->assertDatabaseCount('books', 1);
         $this->assertDatabaseHas('books', ['isbn' => $dto->getIsbn()]);
 
         // Ignore repeats
-        (new BookJob($dto))
-            ->handle(app()->get(BookService::class));
+        (new CreateBookJob($dto))
+            ->handle(app()->get(Create::class));
 
         $this->assertDatabaseCount('books', 1);
         $this->assertDatabaseHas('books', ['isbn' => $dto->getIsbn()]);
     }
 
-    public function testBookJobFail()
+    public function testCreateBookJobFail()
     {
         $this->initFakes();
         $this->assertDatabaseCount('books', 0);
 
-        $dto = BookCreateDto::createFromXml([
+        $dto = CreateBookDto::createFromXml([
             'isbn' => fake()->isbn13(),
             'title' => fake()->words(2, true),
             'description' => fake()->sentence(),
             'image' => null,
         ]);
-        $bookService = $this->createMock(BookService::class);
-        $bookService->method('create')
+        $createAction = $this->createMock(Create::class);
+        $createAction->method('__invoke')
             ->will($this->throwException(new QueryException('some sql', [], new \Exception('test exception'))));
         $this->expectException(QueryException::class);
 
-        (new BookJob($dto))
-            ->handle($bookService);
+        (new CreateBookJob($dto))
+            ->handle($createAction);
         $this->assertDatabaseCount('books', 0);
     }
 
@@ -120,13 +123,12 @@ class BookTest extends TestCase
     {
         $this->initFakes();
         /** @var Book $book */
-        $book = app()->get(BookService::class)
-            ->create(BookCreateDto::createFromXml([
-                'isbn' => '354-2-50-082770-8',
-                'title' => 'Dolores voluptatum et voluptatibus architecto. Esse sapiente magni consectetur consequatur. Vel omnis ea dicta aut qui. Omnis fugit nam ex quaerat.',
-                'description' => 'It sounded an excellent opportunity for making her escape; so she set to work very diligently to write out a history of the hall; but, alas! either the locks were too large, or the key was lying.',
-                'image' => 'https://dummyimage.com/2831x679',
-            ]));
+        $book = app()->get(Create::class)(CreateBookDto::createFromXml([
+            'isbn' => '354-2-50-082770-8',
+            'title' => 'Dolores voluptatum et voluptatibus architecto. Esse sapiente magni consectetur consequatur. Vel omnis ea dicta aut qui. Omnis fugit nam ex quaerat.',
+            'description' => 'It sounded an excellent opportunity for making her escape; so she set to work very diligently to write out a history of the hall; but, alas! either the locks were too large, or the key was lying.',
+            'image' => 'https://dummyimage.com/2831x679',
+        ]));
         $this->assertDatabaseCount('books', 1);
         $this->assertDatabaseHas('books', [
             'isbn' => $book->isbn,
@@ -135,7 +137,7 @@ class BookTest extends TestCase
         Storage::disk($book->storage)
             ->assertExists($book->cover);
 
-        $response = $this->get('/api/books');
+        $response = $this->getJson('/api/books');
         $response->assertJsonPath('data.0.isbn', $book->isbn);
         $response->assertJsonPath('meta.total', 1);
     }
@@ -144,7 +146,7 @@ class BookTest extends TestCase
     {
         Book::factory(150)->create();
         $this->assertDatabaseCount('books', 150);
-        $response = $this->get('/api/books');
+        $response = $this->getJson('/api/books');
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 150)
             ->assertJsonPath('meta.per_page', 100)

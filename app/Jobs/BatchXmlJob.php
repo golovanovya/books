@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Book;
+namespace App\Jobs;
 
+use App\Actions\Book\ParseXml;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Job for parsing xml file
@@ -27,14 +26,8 @@ class BatchXmlJob implements ShouldQueue
         $this->filepath = $filepath;
     }
 
-    public function handle()
+    public function handle(ParseXml $parseXml): void
     {
-        $reader = XmlParser::createFromPath($this->filepath);
-        /** @var array $book */
-        foreach ($reader->read() as $book) {
-            $dto = BookCreateDto::createFromXml($book);
-            Queue::push(new BookJob($dto));
-        }
-        Storage::delete($this->filepath);
+        $parseXml($this->filepath);
     }
 }

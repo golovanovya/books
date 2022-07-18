@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Book;
+namespace App\Utils;
 
 use Exception;
 use Illuminate\Support\Facades\Storage;

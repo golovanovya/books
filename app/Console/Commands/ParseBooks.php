@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Book\BatchXmlJob;
+use App\Actions\Book\ParseXml;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Queue;
 
@@ -37,11 +37,11 @@ class ParseBooks extends Command
      *
      * @return int
      */
-    public function handle()
+    public function handle(ParseXml $parseXml)
     {
         $filepath = $this->argument('filepath');
         $this->line("Parsing file $filepath");
-        Queue::push(new BatchXmlJob($filepath));
+        $parseXml($filepath);
         return 0;
     }
 }
