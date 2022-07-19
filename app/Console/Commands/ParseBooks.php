@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Actions\Book\ParseXml;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Queue;
+use Throwable;
 
 class ParseBooks extends Command
 {
@@ -39,9 +40,14 @@ class ParseBooks extends Command
      */
     public function handle(ParseXml $parseXml)
     {
-        $filepath = $this->argument('filepath');
-        $this->line("Parsing file $filepath");
-        $parseXml($filepath);
+        try {
+            $filepath = $this->argument('filepath');
+            $this->line("Parsing file $filepath");
+            $parseXml($filepath);
+        } catch (Throwable $e) {
+            $this->error($e->getMessage());
+            return 1;
+        }
         return 0;
     }
 }

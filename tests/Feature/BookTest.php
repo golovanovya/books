@@ -12,6 +12,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -20,8 +21,10 @@ class BookTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function initFakes()
+    public function setUp(): void
     {
+        parent::setUp();
+
         Storage::fake('public');
         Storage::fake('local');
         Queue::fake();
@@ -29,8 +32,6 @@ class BookTest extends TestCase
 
     public function testUpload()
     {
-        $this->initFakes();
-
         Queue::assertNothingPushed(BatchXmlJob::class);
         $file = UploadedFile::fake()->create('books.xml');
         $response = $this->postJson('/api/books/upload', ['file' => $file]);
@@ -45,12 +46,28 @@ class BookTest extends TestCase
 
     public function testParseBookCommand()
     {
-        $this->initFakes();
-
         $filepath = Storage::disk('test')->path('books.xml');
         $this->artisan("book:parse {$filepath}")->assertSuccessful();
 
         Queue::assertPushed(CreateBookJob::class, 2);
+    }
+
+    public function testParseWrongBookCommand()
+    {
+        Log::shouldReceive('error')
+            ->once()
+            ->withArgs(function ($message) {
+                return strpos($message, 'Error processing book item') !== false;
+            });
+        $filepath = Storage::disk('test')->path('books_wrong.xml');
+        $this->artisan("book:parse {$filepath}")->assertSuccessful();
+
+        Queue::assertPushed(CreateBookJob::class, 1);
+    }
+
+    public function testInvalidPath()
+    {
+        $this->artisan('book:parse testtest.xml')->assertFailed();
     }
 
     public function testFailedUpload()
@@ -62,8 +79,6 @@ class BookTest extends TestCase
 
     public function testXmlJob()
     {
-        $this->initFakes();
-
         Queue::assertNothingPushed(CreateBookJob::class);
 
         $filepath = Storage::disk('test')->path('books.xml');
@@ -74,8 +89,6 @@ class BookTest extends TestCase
 
     public function testCreateBookJob()
     {
-        $this->initFakes();
-
         $this->assertDatabaseCount('books', 0);
 
         $dto = CreateBookDto::createFromXml([
@@ -100,7 +113,6 @@ class BookTest extends TestCase
 
     public function testCreateBookJobFail()
     {
-        $this->initFakes();
         $this->assertDatabaseCount('books', 0);
 
         $dto = CreateBookDto::createFromXml([
@@ -121,7 +133,6 @@ class BookTest extends TestCase
 
     public function testCreate()
     {
-        $this->initFakes();
         /** @var Book $book */
         $book = app()->get(Create::class)(CreateBookDto::createFromXml([
             'isbn' => '354-2-50-082770-8',
